@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if category %}{{ category.name }} - {% endif %}Products{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .filter-header {
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .price-range-inputs {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .price-input {
+        flex: 1;
+        position: relative;
+    }
+
+    .price-input input {
+        padding-left: 1.5rem;
+    }
+
+    .price-input::before {
+        content: "$";
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+
+    .product-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .product-image {
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .product-brand {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-price {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #28a745;
+    }
+
+    .sort-select {
+        min-width: 200px;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .btn-filter {
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+    }
+
+    .btn-clear {
+        color: #6c757d;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .btn-clear:hover {
+        color: #495057;
+        text-decoration: underline;
+    }
+
+    .no-products {
+        text-align: center;
+        padding: 3rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">{% if category %}{{ category.name }}{% else %}All Products{% endif %}</h1>
+        <div class="d-flex align-items-center">
+            <label for="sort" class="me-2">Sort by:</label>
+            <select name="sort" id="sort" class="form-select sort-select" onchange="this.form.submit()">
+                <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+            </select>
+        </div>
+    </div>
+
+    <form method="get" class="filter-section">
+        <div class="filter-header">
+            <h2 class="h5 mb-0">Filter Products</h2>
+        </div>
+        
+        <div class="row">
+            <!-- Category Filter -->
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label for="category" class="filter-label">Category</label>
+                    <select name="category" id="category" class="form-select">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Brand Filter -->
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label for="brand" class="filter-label">Brand</label>
+                    <select name="brand" id="brand" class="form-select">
+                        <option value="">All Brands</option>
+                        {% for brand in brands %}
+                            <option value="{{ brand.id }}" {% if selected_brand == brand.id|stringformat:"s" %}selected{% endif %}>
+                                {{ brand.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Price Range -->
+            <div class="col-md-4">
+                <div class="filter-group">
+                    <label class="filter-label">Price Range</label>
+                    <div class="price-range-inputs">
+                        <div class="price-input">
+                            <input type="number" name="min_price" id="min_price" class="form-control" placeholder="Min" value="{{ min_price }}">
+                        </div>
+                        <div class="price-input">
+                            <input type="number" name="max_price" id="max_price" class="form-control" placeholder="Max" value="{{ max_price }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-actions mt-3">
+            <button type="submit" class="btn btn-primary btn-filter">Apply Filters</button>
+            <a href="{% url 'products:product_list' %}" class="btn-clear">Clear All Filters</a>
+        </div>
+    </form>
+
+    <!-- Products Grid -->
+    <div class="row g-4">
+        {% for product in products %}
+            <div class="col-md-4">
+                <div class="card product-card">
+                    <a href="{% url 'products:product_detail' product.slug %}" class="text-decoration-none">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                        {% endif %}
+                        <div class="card-body">
+                            <div class="product-brand">{{ product.brand.name }}</div>
+                            <h5 class="card-title text-dark">{{ product.name }}</h5>
+                            <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <div class="product-price">${{ product.price }}</div>
+                                <form action="{% url 'cart:cart_add' product.id %}" method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                                </form>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="no-products">
+                    <h3 class="h4 mb-3">No Products Found</h3>
+                    <p class="text-muted mb-0">Try adjusting your filters to find what you're looking for.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-submit form when sort changes
+    document.getElementById('sort').addEventListener('change', function() {
+        this.form.submit();
+    });
+});
+</script>
+{% endblock %} 

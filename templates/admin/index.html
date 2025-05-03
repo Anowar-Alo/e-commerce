@@ -1,0 +1,194 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .dashboard {
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    .dashboard .module {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .dashboard .module:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .dashboard .module h2 {
+        margin: 0;
+        padding: 15px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .dashboard .module table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .dashboard .module table th {
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #666;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .dashboard .module table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #e0e0e0;
+        color: #444;
+    }
+    .dashboard .module table tr:last-child td {
+        border-bottom: none;
+    }
+    .dashboard .module .addlink {
+        display: inline-block;
+        padding: 8px 15px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        margin: 15px;
+        transition: background-color 0.2s;
+    }
+    .dashboard .module .addlink:hover {
+        background: var(--secondary);
+    }
+    .dashboard .module .changelink {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    .dashboard .module .changelink:hover {
+        color: var(--secondary);
+    }
+    .dashboard .module .mini {
+        font-size: 12px;
+        color: #666;
+    }
+    .dashboard .module .actionlist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .dashboard .module .actionlist li {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .dashboard .module .actionlist li:last-child {
+        border-bottom: none;
+    }
+    .dashboard .module .actionlist .addlink {
+        color: #28a745;
+    }
+    .dashboard .module .actionlist .changelink {
+        color: #17a2b8;
+    }
+    .dashboard .module .actionlist .deletelink {
+        color: #dc3545;
+    }
+    .dashboard .module .quiet {
+        color: #666;
+    }
+    .dashboard .module .mini.quiet {
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    {% if app_list %}
+        {% for app in app_list %}
+            <div class="app-{{ app.app_label }} module">
+                <h2>{{ app.name }}</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Model' %}</th>
+                            <th>{% trans 'Add' %}</th>
+                            <th>{% trans 'Change' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for model in app.models %}
+                            <tr>
+                                <td>
+                                    {% if model.admin_url %}
+                                        <a href="{{ model.admin_url }}" class="changelink">{{ model.name }}</a>
+                                    {% else %}
+                                        {{ model.name }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if model.add_url %}
+                                        <a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a>
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if model.admin_url %}
+                                        <a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a>
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>{% trans "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+    <div class="module" id="recent-actions-module">
+        <h2>{% trans 'Recent actions' %}</h2>
+        <h3>{% trans 'My actions' %}</h3>
+        {% load log %}
+        {% get_admin_log 10 as admin_log for_user user %}
+        {% if not admin_log %}
+            <p>{% trans 'None available' %}</p>
+        {% else %}
+            <ul class="actionlist">
+                {% for entry in admin_log %}
+                    <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+                        {% if entry.is_deletion or not entry.get_admin_url %}
+                            {{ entry.object_repr }}
+                        {% else %}
+                            <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                        {% endif %}
+                        <br>
+                        {% if entry.content_type %}
+                            <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+                        {% else %}
+                            <span class="mini quiet">{% trans 'Unknown content' %}</span>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

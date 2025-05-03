@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Welcome to Our E-commerce Store" %}{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero bg-primary text-white py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">{% trans "Welcome to Our Store" %}</h1>
+                <p class="lead">{% trans "Discover amazing products at great prices." %}</p>
+                <a href="{% url 'products:product_list' %}" class="btn btn-light btn-lg">
+                    {% trans "Shop Now" %} <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+            <div class="col-md-6">
+                <img src="{% static 'images/hero-image.jpg' %}" alt="Hero Image" class="img-fluid rounded shadow">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="featured-products mb-5">
+    <div class="container">
+        <h2 class="section-title mb-4">{% trans "Featured Products" %}</h2>
+        <div class="row">
+            {% for product in featured_products %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="{% static 'images/no-image.jpg' %}" class="card-img-top" alt="No Image">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text text-muted">{{ product.category.name }}</p>
+                            <p class="card-text fw-bold">${{ product.price }}</p>
+                            <a href="{% url 'products:product_detail' product.id %}" class="btn btn-primary">
+                                {% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Latest Products -->
+<section class="latest-products mb-5">
+    <div class="container">
+        <h2 class="section-title mb-4">{% trans "Latest Products" %}</h2>
+        <div class="row">
+            {% for product in latest_products %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="{% static 'images/no-image.jpg' %}" class="card-img-top" alt="No Image">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ product.name }}</h5>
+                            <p class="card-text text-muted">{{ product.category.name }}</p>
+                            <p class="card-text fw-bold">${{ product.price }}</p>
+                            <a href="{% url 'products:product_detail' product.id %}" class="btn btn-primary">
+                                {% trans "View Details" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="categories mb-5">
+    <div class="container">
+        <h2 class="section-title mb-4">{% trans "Shop by Category" %}</h2>
+        <div class="row">
+            {% for category in categories %}
+                <div class="col-md-2 mb-4">
+                    <a href="{% url 'products:product_list' %}?category={{ category.id }}" class="text-decoration-none">
+                        <div class="card h-100 text-center">
+                            {% if category.image %}
+                                <img src="{{ category.image.url }}" class="card-img-top p-3" alt="{{ category.name }}">
+                            {% else %}
+                                <i class="fas fa-tag fa-3x text-primary mt-3"></i>
+                            {% endif %}
+                            <div class="card-body">
+                                <h6 class="card-title">{{ category.name }}</h6>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features bg-light py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <i class="fas fa-truck fa-3x text-primary mb-3"></i>
+                <h4>{% trans "Free Shipping" %}</h4>
+                <p class="text-muted">{% trans "On orders over $50" %}</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <i class="fas fa-undo fa-3x text-primary mb-3"></i>
+                <h4>{% trans "Easy Returns" %}</h4>
+                <p class="text-muted">{% trans "30-day return policy" %}</p>
+            </div>
+            <div class="col-md-4 mb-4">
+                <i class="fas fa-headset fa-3x text-primary mb-3"></i>
+                <h4>{% trans "24/7 Support" %}</h4>
+                <p class="text-muted">{% trans "Always here to help" %}</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} 

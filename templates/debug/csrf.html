@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}CSRF Debug{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="mb-4">CSRF Debug Information</h2>
+                    
+                    <div class="alert alert-info">
+                        <h4>CSRF Token in META:</h4>
+                        <pre>{{ csrf_token }}</pre>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h4>CSRF Token in Session:</h4>
+                        <pre>{{ session_csrf }}</pre>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h4>CSRF Cookie Settings:</h4>
+                        <ul>
+                            <li>CSRF_COOKIE_SECURE: {{ settings.CSRF_COOKIE_SECURE }}</li>
+                            <li>CSRF_COOKIE_HTTPONLY: {{ settings.CSRF_COOKIE_HTTPONLY }}</li>
+                            <li>CSRF_COOKIE_SAMESITE: {{ settings.CSRF_COOKIE_SAMESITE }}</li>
+                            <li>CSRF_USE_SESSIONS: {{ settings.CSRF_USE_SESSIONS }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

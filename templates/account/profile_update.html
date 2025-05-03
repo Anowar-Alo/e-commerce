@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% block title %}Update Profile{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="row g-4">
+                <!-- Profile Update Form -->
+                <div class="col-md-4">
+                    <div class="card profile-card shadow-lg border-0 rounded-4 h-100">
+                        <div class="card-body p-4">
+                            <div class="text-center mb-4">
+                                <div class="avatar-container mb-3">
+                                    {% if user.profile.avatar %}
+                                        <img src="{{ user.profile.avatar.url }}" class="profile-avatar" width="120" height="120" alt="Avatar">
+                                        <div class="avatar-overlay">
+                                            <i class="fas fa-camera"></i>
+                                        </div>
+                                    {% else %}
+                                        <div class="profile-avatar-placeholder">
+                                            <i class="fas fa-user fa-3x text-primary"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <h4 class="mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                                <p class="text-muted mb-0">@{{ user.username }}</p>
+                            </div>
+                            <form method="post" enctype="multipart/form-data" class="profile-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="update_profile" value="1">
+                                {{ user_form.non_field_errors }}
+                                {{ profile_form.non_field_errors }}
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_email" class="form-label"><i class="fas fa-envelope me-2"></i>Email</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                        {{ user_form.email }}
+                                    </div>
+                                    <div class="form-text">Your primary email address</div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_username" class="form-label"><i class="fas fa-user me-2"></i>Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                        {{ user_form.username }}
+                                    </div>
+                                    <div class="form-text">Your unique username</div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_first_name" class="form-label"><i class="fas fa-user-tag me-2"></i>First Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                                        {{ user_form.first_name }}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_last_name" class="form-label"><i class="fas fa-user-tag me-2"></i>Last Name</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                                        {{ user_form.last_name }}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_bio" class="form-label"><i class="fas fa-info-circle me-2"></i>Bio</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-info-circle"></i></span>
+                                        {{ profile_form.bio }}
+                                    </div>
+                                    <div class="form-text">Tell us about yourself</div>
+                                </div>
+                                
+                                <div class="form-group mb-3">
+                                    <label for="id_avatar" class="form-label"><i class="fas fa-camera me-2"></i>Avatar</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-camera"></i></span>
+                                        {{ profile_form.avatar }}
+                                    </div>
+                                    <div class="form-text">Upload a profile picture</div>
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary btn-lg" type="submit">
+                                        <i class="fas fa-save me-2"></i>Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Section -->
+                <div class="col-md-8">
+                    <div class="card payment-card shadow-lg border-0 rounded-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Methods</h4>
+                                <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#addPaymentForm">
+                                    <i class="fas fa-plus me-2"></i>Add New
+                                </button>
+                            </div>
+                            
+                            <!-- Add Payment Method Form -->
+                            <div class="collapse mb-4" id="addPaymentForm">
+                                <div class="card card-body border-0 bg-light">
+                                    <form method="post" class="payment-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="add_payment" value="1">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="id_type" class="form-label"><i class="fas fa-credit-card me-2"></i>Payment Type</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-credit-card"></i></span>
+                                                    {{ payment_form.type }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="id_provider" class="form-label"><i class="fas fa-building me-2"></i>Provider</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-building"></i></span>
+                                                    {{ payment_form.provider }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="id_card_last4" class="form-label"><i class="fas fa-hashtag me-2"></i>Last 4 Digits</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                                                    {{ payment_form.card_last4 }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="id_card_brand" class="form-label"><i class="fas fa-tag me-2"></i>Card Brand</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                                                    {{ payment_form.card_brand }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="id_card_exp_month" class="form-label"><i class="fas fa-calendar me-2"></i>Expiry Month</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                    {{ payment_form.card_exp_month }}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="id_card_exp_year" class="form-label"><i class="fas fa-calendar me-2"></i>Expiry Year</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                                    {{ payment_form.card_exp_year }}
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <button class="btn btn-primary" type="submit">
+                                                    <i class="fas fa-save me-2"></i>Add Payment Method
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Payment Methods List -->
+                            <div class="payment-methods">
+                                {% for payment in payment_methods %}
+                                <div class="card payment-method-card mb-3 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center">
+                                                <div class="payment-icon me-3">
+                                                    <i class="fas fa-credit-card fa-2x text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ payment.get_type_display }}</h6>
+                                                    <small class="text-muted">
+                                                        {{ payment.provider }} •••• {{ payment.card_last4 }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#editPaymentModal{{ payment.id }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form method="post" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="delete_payment" value="{{ payment.id }}">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted mb-0">No payment methods added yet</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .payment-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .avatar-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    
+    .profile-avatar {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 3px solid var(--bs-primary);
+        transition: all 0.3s ease;
+    }
+    
+    .avatar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .avatar-overlay i {
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .avatar-container:hover .avatar-overlay {
+        opacity: 1;
+    }
+    
+    .avatar-container:hover .profile-avatar {
+        transform: scale(1.05);
+    }
+    
+    .profile-avatar-placeholder {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid var(--bs-primary);
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .profile-avatar-placeholder:hover {
+        background-color: #e9ecef;
+        transform: scale(1.05);
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .form-control {
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-right: none;
+    }
+    
+    .input-group .form-control {
+        border-left: none;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: var(--bs-primary);
+        border: none;
+    }
+    
+    .btn-primary:hover {
+        background: var(--bs-primary-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.2);
+    }
+    
+    .btn-outline-primary {
+        border: 1px solid var(--bs-primary);
+    }
+    
+    .btn-outline-primary:hover {
+        background: var(--bs-primary);
+        color: white;
+    }
+    
+    .btn-outline-danger {
+        border: 1px solid var(--bs-danger);
+    }
+    
+    .btn-outline-danger:hover {
+        background: var(--bs-danger);
+        color: white;
+    }
+    
+    .payment-method-card {
+        transition: all 0.3s ease;
+        border-left: 3px solid var(--bs-primary);
+    }
+    
+    .payment-method-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+    }
+    
+    .payment-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .shadow-lg {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .rounded-4 {
+        border-radius: 1rem !important;
+    }
+    
+    .text-primary {
+        color: var(--bs-primary) !important;
+    }
+    
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add Bootstrap classes to widgets if not already present
+(function() {
+    document.querySelectorAll('input, textarea, select').forEach(function(el) {
+        if (!el.classList.contains('form-control')) {
+            el.classList.add('form-control');
+        }
+    });
+})();
+</script>
+{% endblock %} 

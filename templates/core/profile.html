@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}{% trans "My Profile" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <!-- Profile Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if profile.avatar %}
+                        <img src="{{ profile.avatar.url }}" alt="Profile Avatar" class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <img src="{% static 'images/default-avatar.png' %}" alt="Default Avatar" class="rounded-circle img-fluid mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    {% endif %}
+                    <h4 class="mb-1">{{ user.get_full_name|default:user.username }}</h4>
+                    <p class="text-muted mb-4">{{ user.email }}</p>
+                    <a href="{% url 'core:profile_update' %}" class="btn btn-primary">{% trans "Edit Profile" %}</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Details -->
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">{% trans "Profile Information" %}</h5>
+                    
+                    {% if profile.bio %}
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-2">{% trans "Bio" %}</h6>
+                        <p>{{ profile.bio }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Username" %}</h6>
+                                <p>{{ user.username }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Email" %}</h6>
+                                <p>{{ user.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "First Name" %}</h6>
+                                <p>{{ user.first_name|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Last Name" %}</h6>
+                                <p>{{ user.last_name|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Phone Number" %}</h6>
+                                <p>{{ profile.phone_number|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Address" %}</h6>
+                                <p>{{ profile.address|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "City" %}</h6>
+                                <p>{{ profile.city|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "State" %}</h6>
+                                <p>{{ profile.state|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Country" %}</h6>
+                                <p>{{ profile.country|default:"-" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Postal Code" %}</h6>
+                                <p>{{ profile.postal_code|default:"-" }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Member Since" %}</h6>
+                                <p>{{ profile.created_at|date:"F j, Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-1">{% trans "Last Updated" %}</h6>
+                                <p>{{ profile.updated_at|date:"F j, Y" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Payment Methods</h5>
+                    
+                    <!-- Add Payment Method Form -->
+                    <div class="mb-4">
+                        <h6>Add New Payment Method</h6>
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ payment_form.type|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ payment_form.provider|as_crispy_field }}
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ payment_form.token|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ payment_form.is_default|as_crispy_field }}
+                                </div>
+                            </div>
+                            
+                            <!-- Card-specific fields -->
+                            <div id="card-fields" class="payment-type-fields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        {{ payment_form.card_last4|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ payment_form.card_brand|as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        {{ payment_form.card_exp_month|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ payment_form.card_exp_year|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bank-specific fields -->
+                            <div id="bank-fields" class="payment-type-fields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        {{ payment_form.bank_name|as_crispy_field }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        {{ payment_form.bank_account_last4|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Wallet-specific fields -->
+                            <div id="wallet-fields" class="payment-type-fields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        {{ payment_form.wallet_email|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- UPI-specific fields -->
+                            <div id="upi-fields" class="payment-type-fields" style="display: none;">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        {{ payment_form.upi_id|as_crispy_field }}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" name="payment_submit" class="btn btn-primary">Add Payment Method</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Existing Payment Methods -->
+                    <div class="mt-4">
+                        <h6>Your Payment Methods</h6>
+                        {% if payment_methods %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Provider</th>
+                                            <th>Details</th>
+                                            <th>Default</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for method in payment_methods %}
+                                            <tr>
+                                                <td>{{ method.get_type_display }}</td>
+                                                <td>{{ method.provider }}</td>
+                                                <td>
+                                                    {% if method.type == 'card' %}
+                                                        {{ method.card_brand }} - **** **** **** {{ method.card_last4 }}
+                                                        (Expires: {{ method.card_exp_month }}/{{ method.card_exp_year }})
+                                                    {% elif method.type == 'bank' %}
+                                                        {{ method.bank_name }} - **** **** **** {{ method.bank_account_last4 }}
+                                                    {% elif method.type == 'wallet' %}
+                                                        {{ method.wallet_email }}
+                                                    {% elif method.type == 'upi' %}
+                                                        {{ method.upi_id }}
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if method.is_default %}
+                                                        <span class="badge bg-success">Default</span>
+                                                    {% else %}
+                                                        <form method="post" action="{% url 'core:set_default_payment_method' method.id %}" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-primary">Set Default</button>
+                                                        </form>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <form method="post" action="{% url 'core:delete_payment_method' method.id %}" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this payment method?')">Delete</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No payment methods added yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.querySelector('#id_type');
+    const cardFields = document.querySelector('#card-fields');
+    const bankFields = document.querySelector('#bank-fields');
+    const walletFields = document.querySelector('#wallet-fields');
+    const upiFields = document.querySelector('#upi-fields');
+    
+    function toggleFields() {
+        // Hide all fields first
+        [cardFields, bankFields, walletFields, upiFields].forEach(field => {
+            field.style.display = 'none';
+        });
+        
+        // Show relevant fields based on selected type
+        switch(typeSelect.value) {
+            case 'card':
+                cardFields.style.display = 'block';
+                break;
+            case 'bank':
+                bankFields.style.display = 'block';
+                break;
+            case 'wallet':
+                walletFields.style.display = 'block';
+                break;
+            case 'upi':
+                upiFields.style.display = 'block';
+                break;
+        }
+    }
+    
+    typeSelect.addEventListener('change', toggleFields);
+    toggleFields(); // Initial call to set correct fields
+});
+</script>
+{% endblock %} 

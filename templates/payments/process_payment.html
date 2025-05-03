@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Process Payment" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">{% trans "Process Payment" %}</h5>
+                    
+                    <div class="mb-4">
+                        <h6>{% trans "Order Details" %}</h6>
+                        <p>{% trans "Order ID" %}: {{ order.id }}</p>
+                        <p>{% trans "Total Amount" %}: {{ order.total }} {{ order.currency }}</p>
+                    </div>
+                    
+                    <form id="payment-form">
+                        <div id="payment-element">
+                            <!-- Stripe Elements will be inserted here -->
+                        </div>
+                        
+                        <div id="payment-message" class="alert d-none mt-3"></div>
+                        
+                        <button id="submit" class="btn btn-primary w-100 mt-4">
+                            <span id="button-text">{% trans "Pay Now" %}</span>
+                            <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const stripe = Stripe('{{ stripe_public_key }}');
+const elements = stripe.elements();
+
+// Create and mount the Payment Element
+const paymentElement = elements.create('payment');
+paymentElement.mount('#payment-element');
+
+const form = document.getElementById('payment-form');
+const submitButton = document.getElementById('submit');
+const spinner = document.getElementById('spinner');
+const buttonText = document.getElementById('button-text');
+const paymentMessage = document.getElementById('payment-message');
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Disable the submit button
+    submitButton.disabled = true;
+    spinner.classList.remove('d-none');
+    buttonText.textContent = '{% trans "Processing..." %}';
+    
+    try {
+        const { error } = await stripe.confirmPayment({
+            elements,
+            confirmParams: {
+                return_url: window.location.href,
+            },
+        });
+        
+        if (error) {
+            paymentMessage.textContent = error.message;
+            paymentMessage.classList.remove('d-none');
+            paymentMessage.classList.add('alert-danger');
+        }
+    } catch (error) {
+        paymentMessage.textContent = '{% trans "An unexpected error occurred." %}';
+        paymentMessage.classList.remove('d-none');
+        paymentMessage.classList.add('alert-danger');
+    } finally {
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        spinner.classList.add('d-none');
+        buttonText.textContent = '{% trans "Pay Now" %}';
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Confirm Your Email Address" %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-body p-5 text-center">
+                    <h2 class="mb-4 text-primary">{% trans "Confirm Your Email Address" %}</h2>
+                    <p class="mb-4">{% trans "Please confirm that you want to use this email address:" %}</p>
+                    <div class="alert alert-info mb-4">
+                        <strong>{{ email }}</strong>
+                    </div>
+                    <form method="post" action=".">
+                        {% csrf_token %}
+                        <button class="btn btn-primary btn-lg w-100" type="submit">{% trans "Confirm" %}</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

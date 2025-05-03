@@ -1,0 +1,120 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .app-index {
+        padding: 20px;
+    }
+    .app-index .module {
+        margin-bottom: 20px;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .app-index .module h2 {
+        margin: 0;
+        padding: 15px;
+        font-size: 14px;
+        text-transform: uppercase;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .app-index .module table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .app-index .module table th {
+        padding: 10px 15px;
+        text-align: left;
+        font-weight: 600;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .app-index .module table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .app-index .module table tr:last-child td {
+        border-bottom: none;
+    }
+    .app-index .module .addlink {
+        display: inline-block;
+        padding: 8px 15px;
+        background: var(--accent);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 4px;
+        margin: 15px;
+    }
+    .app-index .module .addlink:hover {
+        background: var(--secondary);
+    }
+</style>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ app_label }}{% endblock %}
+
+{% if not is_popup %}
+    {% block breadcrumbs %}
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+        &rsaquo;
+        {{ app_label|capfirst|escape }}
+    </div>
+    {% endblock %}
+{% endif %}
+
+{% block content %}
+<div id="content-main">
+    <div class="app-index">
+        {% if app_list %}
+            {% for model in app_list %}
+                <div class="module">
+                    <h2>{{ model.name }}</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>{% trans 'Model' %}</th>
+                                <th>{% trans 'Add' %}</th>
+                                <th>{% trans 'Change' %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    {% if model.admin_url %}
+                                        <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                                    {% else %}
+                                        {{ model.name }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if model.add_url %}
+                                        <a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a>
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if model.admin_url %}
+                                        <a href="{{ model.admin_url }}" class="changelink">{% trans 'Change' %}</a>
+                                    {% else %}
+                                        &nbsp;
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>{% trans 'You don't have permission to view or edit anything.' %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

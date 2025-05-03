@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Categories - E-commerce Store{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">Product Categories</h1>
+    
+    <div class="row g-4">
+        {% for category in categories %}
+            <div class="col-md-4 col-lg-3">
+                <div class="category-card h-100">
+                    {% if category.image %}
+                        <img src="{{ category.image.url }}" alt="{{ category.name }}" class="img-fluid rounded">
+                    {% endif %}
+                    <h3 class="h5 mt-3 mb-2">{{ category.name }}</h3>
+                    {% if category.description %}
+                        <p class="text-muted small">{{ category.description|truncatewords:20 }}</p>
+                    {% endif %}
+                    <a href="{% url 'products:category' category.slug %}" class="btn btn-outline-primary btn-sm">View Products</a>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-muted">No categories available.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %} 
