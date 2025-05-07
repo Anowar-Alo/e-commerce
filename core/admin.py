@@ -7,9 +7,8 @@ from django.shortcuts import render
 from django.db.models import Count, Sum
 from django.utils import timezone
 from datetime import timedelta
-from products.models import Product, Category, Brand
+from products.models import Product, Category, Brand, ProductAttribute
 from orders.models import Order, OrderItem, Refund
-from payments.models import Transaction, PaymentMethod
 from django.contrib.auth.models import User
 from .models import Dashboard, UserProfile, SiteSettings
 from .views import admin_analytics
@@ -24,9 +23,9 @@ class CustomAdminSite(admin.AdminSite):
     login_template = 'admin/login.html'
     index_template = 'admin/index.html'
     app_index_template = 'admin/app_index.html'
-    site_header = settings.ADMIN_SITE_HEADER
-    site_title = settings.ADMIN_SITE_TITLE
-    index_title = settings.ADMIN_INDEX_TITLE
+    site_header = "ASM"
+    site_title = "ASM"
+    index_title = "ASM"
 
     def get_urls(self):
         urls = super().get_urls()
@@ -43,8 +42,10 @@ class CustomAdminSite(admin.AdminSite):
         ]
         return custom_urls + urls
 
-    def get_app_list(self, request):
-        app_list = super().get_app_list(request)
+    def get_app_list(self, request, app_label=None):
+        app_list = super().get_app_list(request, app_label)
+        # Remove payments app from the list
+        app_list = [app for app in app_list if app['app_label'] != 'payments']
         return app_list
 
     def dashboard_view(self, request):
@@ -102,6 +103,11 @@ class CustomAdminSite(admin.AdminSite):
 # Create admin site instance
 admin_site = CustomAdminSite(name='admin')
 
+class ProductAttributeInline(admin.TabularInline):
+    model = ProductAttribute
+    extra = 1
+    fields = ('attribute', 'value')
+
 @admin.register(Product, site=admin_site)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'brand', 'price', 'stock', 'is_active')
@@ -112,19 +118,22 @@ class ProductAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug', 'description', 'category', 'brand')
+            'fields': ('name', 'slug', 'description', 'category', 'brand', 'sku')
         }),
         ('Pricing and Stock', {
             'fields': ('price', 'stock', 'is_active')
         }),
         ('Images', {
-            'fields': ('image', 'image_alt')
+            'fields': ('image', 'gallery')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
+    
+    # Add inline for product attributes
+    inlines = [ProductAttributeInline]
 
 @admin.register(Category, site=admin_site)
 class CategoryAdmin(admin.ModelAdmin):
@@ -139,7 +148,7 @@ class CategoryAdmin(admin.ModelAdmin):
             'fields': ('name', 'slug', 'description', 'parent', 'is_active')
         }),
         ('Images', {
-            'fields': ('image', 'image_alt')
+            'fields': ('image',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -160,47 +169,11 @@ class BrandAdmin(admin.ModelAdmin):
             'fields': ('name', 'slug', 'description', 'is_active')
         }),
         ('Images', {
-            'fields': ('logo', 'logo_alt')
+            'fields': ('logo',)
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Order, site=admin_site)
-class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'status', 'total', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('id', 'user__username', 'user__email')
-    readonly_fields = ('created_at', 'updated_at')
-    
-    fieldsets = (
-        ('Order Information', {
-            'fields': ('user', 'status', 'total')
-        }),
-        ('Shipping Information', {
-            'fields': ('shipping_address', 'shipping_city', 'shipping_state', 'shipping_country', 'shipping_postal_code')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(OrderItem, site=admin_site)
-class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('order', 'product', 'quantity', 'get_price')
-    list_filter = ('order__status',)
-    search_fields = ('order__id', 'product__name')
-    
-    def get_price(self, obj):
-        return obj.product.price
-    get_price.short_description = 'Price'
-
-    fieldsets = (
-        ('Order Item Information', {
-            'fields': ('order', 'product', 'quantity')
         }),
     )
 
@@ -228,16 +201,33 @@ class UserProfileAdmin(admin.ModelAdmin):
 class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = ('site_name', 'contact_email', 'contact_phone')
     fieldsets = (
-        ('General Settings', {
-            'fields': ('site_name', 'site_description', 'site_logo')
+        ('Basic Information', {
+            'fields': ('site_name', 'site_description', 'logo', 'favicon')
         }),
         ('Contact Information', {
-            'fields': ('contact_email', 'contact_phone', 'contact_address')
+            'fields': ('contact_email', 'contact_phone', 'address')
         }),
         ('Social Media', {
-            'fields': ('facebook_url', 'twitter_url', 'instagram_url'),
-            'classes': ('collapse',)
+            'fields': ('facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url')
         }),
+        ('SEO', {
+            'fields': ('meta_title', 'meta_description', 'meta_keywords')
+        }),
+        ('Maintenance', {
+            'fields': ('maintenance_mode', 'maintenance_message')
+        }),
+        ('Analytics', {
+            'fields': ('google_analytics_id', 'facebook_pixel_id')
+        }),
+        ('Shipping', {
+            'fields': ('free_shipping_threshold', 'shipping_cost')
+        }),
+        ('Theme', {
+            'fields': ('primary_color', 'secondary_color', 'accent_color')
+        }),
+        ('Cache', {
+            'fields': ('cache_timeout',)
+        })
     )
 
 # Register the dashboard model
@@ -258,59 +248,4 @@ class RefundAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
-    )
-
-@admin.register(PaymentMethod, site=admin_site)
-class PaymentMethodAdmin(admin.ModelAdmin):
-    list_display = ('user', 'type', 'is_default', 'created_at')
-    list_filter = ('type', 'is_default')
-    search_fields = ('user__username', 'user__email')
-    readonly_fields = ('created_at', 'updated_at')
-    
-    fieldsets = (
-        ('Payment Method Information', {
-            'fields': ('user', 'type', 'is_default')
-        }),
-        ('Card Information', {
-            'fields': ('card_last4', 'card_brand', 'card_exp_month', 'card_exp_year'),
-            'classes': ('collapse',)
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Transaction, site=admin_site)
-class TransactionAdmin(admin.ModelAdmin):
-    list_display = ('order', 'payment_method', 'amount', 'status', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('order__id', 'payment_method__user__username')
-    readonly_fields = ('created_at', 'updated_at')
-    
-    fieldsets = (
-        ('Transaction Information', {
-            'fields': ('order', 'payment_method', 'amount', 'status')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
-
-@admin.register(Dashboard)
-class DashboardAdmin(admin.ModelAdmin):
-    list_display = ('total_orders', 'total_revenue', 'total_products', 'total_customers', 'last_updated')
-    readonly_fields = ('total_orders', 'total_revenue', 'total_products', 'total_customers', 'last_updated')
-    
-    def has_add_permission(self, request):
-        return False
-    
-    def has_delete_permission(self, request, obj=None):
-        return False
-    
-    def changelist_view(self, request, extra_context=None):
-        # Update metrics when viewing the dashboard
-        dashboard, created = Dashboard.objects.get_or_create(pk=1)
-        dashboard.update_metrics()
-        return super().changelist_view(request, extra_context) 
+    ) 

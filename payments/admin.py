@@ -2,6 +2,8 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin
 from .models import PaymentMethod, Transaction
 
+# Payment models are not registered in admin to keep the interface clean
+
 @admin.register(PaymentMethod)
 class PaymentMethodAdmin(ModelAdmin):
     list_display = ('provider', 'type', 'is_active')

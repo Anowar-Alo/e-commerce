@@ -74,11 +74,6 @@
 </div>
 
 <div class="chart-container">
-    <h3>{% trans "Recent Orders" %}</h3>
-    <canvas id="ordersChart"></canvas>
-</div>
-
-<div class="chart-container">
     <h3>{% trans "Revenue by Month" %}</h3>
     <canvas id="revenueChart"></canvas>
 </div>
@@ -91,48 +86,42 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Orders Chart
-    const ordersCtx = document.getElementById('ordersChart').getContext('2d');
-    new Chart(ordersCtx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-            datasets: [{
-                label: 'Orders',
-                data: [12, 19, 3, 5, 2, 3],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                }
-            }
-        }
-    });
+    const monthlyRevenue = {{ cl.result_list.0.monthly_revenue|safe }};
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const revenueData = months.map((_, index) => monthlyRevenue[(index + 1).toString()] || 0);
 
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            labels: months,
             datasets: [{
-                label: 'Revenue',
-                data: [1200, 1900, 300, 500, 200, 300],
+                label: '{% trans "Monthly Revenue" %}',
+                data: revenueData,
                 backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgb(54, 162, 235)',
+                borderColor: 'rgba(54, 162, 235, 1)',
                 borderWidth: 1
             }]
         },
         options: {
             responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '{{ CURRENCY_SYMBOL }}' + value;
+                        }
+                    }
+                }
+            },
             plugins: {
-                legend: {
-                    position: 'top',
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return '{{ CURRENCY_SYMBOL }}' + context.raw;
+                        }
+                    }
                 }
             }
         }

@@ -4,8 +4,10 @@ from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse
 from cart.cart import Cart
-from .models import Order, OrderItem
+from .models import Order, OrderItem, OrderStatusUpdate
 from products.models import Product
+from core.models import Dashboard
+from django.utils import timezone
 import uuid
 
 # Create your views here 
@@ -42,20 +44,20 @@ def order_create(request):
                 shipping_email=request.user.email,
                 shipping_phone=request.POST.get('phone_number', ''),
                 shipping_address=request.POST.get('shipping_address', ''),
-                shipping_city='',  # Not collected in form
-                shipping_state='',  # Not collected in form
-                shipping_country='',  # Not collected in form
-                shipping_postal_code='',  # Not collected in form
+                shipping_city='',  # Default empty
+                shipping_state='',  # Default empty
+                shipping_country='',  # Default empty
+                shipping_postal_code='',  # Default empty
                 
                 # Billing information (same as shipping for now)
                 billing_name=request.user.get_full_name() or request.user.username,
                 billing_email=request.user.email,
                 billing_phone=request.POST.get('phone_number', ''),
                 billing_address=request.POST.get('shipping_address', ''),
-                billing_city='',  # Not collected in form
-                billing_state='',  # Not collected in form
-                billing_country='',  # Not collected in form
-                billing_postal_code='',  # Not collected in form
+                billing_city='',  # Default empty
+                billing_state='',  # Default empty
+                billing_country='',  # Default empty
+                billing_postal_code='',  # Default empty
                 
                 # Amounts
                 subtotal=cart.get_total_price(),
@@ -63,9 +65,12 @@ def order_create(request):
                 tax=0,  # No tax for now
                 total=cart.get_total_price(),
                 
+                # Shipping method (default to standard)
+                shipping_method='standard',
+                
                 # Payment information
                 payment_method=request.POST.get('payment_method', 'cash'),
-                notes=request.POST.get('notes', ''),
+                customer_notes=request.POST.get('notes', ''),
             )
             
             # Create order items
@@ -106,4 +111,48 @@ def order_create(request):
     
     return render(request, 'orders/create.html', {
         'cart': cart,
-    }) 
+    })
+
+@login_required
+def order_update(request, order_id):
+    """Update order status and create status update record."""
+    if not request.user.is_staff:
+        messages.error(request, 'You do not have permission to update orders.')
+        return redirect('orders:order_list')
+    
+    order = get_object_or_404(Order, id=order_id)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+        
+        if new_status in dict(Order.STATUS_CHOICES):
+            # Update order status
+            order.status = new_status
+            
+            # Update timestamps based on status
+            if new_status == 'shipped':
+                order.shipped_at = timezone.now()
+            elif new_status == 'delivered':
+                order.delivered_at = timezone.now()
+            
+            order.save()
+            
+            # Create status update record
+            OrderStatusUpdate.objects.create(
+                order=order,
+                status=new_status,
+                notes=notes,
+                created_by=request.user
+            )
+            
+            # Update dashboard metrics
+            dashboard = Dashboard.objects.first()
+            if dashboard:
+                dashboard.update_metrics()
+            
+            messages.success(request, f'Order status updated to {new_status}.')
+        else:
+            messages.error(request, 'Invalid status provided.')
+    
+    return redirect('admin:orders_order_change', order_id) 

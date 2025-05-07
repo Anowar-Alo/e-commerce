@@ -5,10 +5,10 @@ from payments.models import PaymentMethod
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from accounts.models import CustomUser
 
-User = get_user_model()
+User = CustomUser
 
 class UserUpdateForm(forms.ModelForm):
     class Meta:

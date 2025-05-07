@@ -4,6 +4,9 @@ from django.utils.translation import gettext_lazy as _
 from django_countries.fields import CountryField
 from phonenumber_field.modelfields import PhoneNumberField
 from simple_history.models import HistoricalRecords
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from core.models import Dashboard
 
 
 class Order(models.Model):
@@ -103,6 +106,61 @@ class Order(models.Model):
     def can_refund(self):
         return self.status not in ['cancelled', 'refunded'] and self.is_paid
 
+    def update_product_stock(self):
+        """Update product stock when order is delivered."""
+        if self.status == 'delivered' and self.payment_status == 'paid':
+            for item in self.items.all():
+                if item.product:
+                    # Decrease product stock
+                    item.product.stock -= item.quantity
+                    item.product.save()
+                    
+                    # If product has variants, update variant stock
+                    if item.variant:
+                        item.variant.stock -= item.quantity
+                        item.variant.save()
+
+    def restore_product_stock(self):
+        """Restore product stock when order is cancelled or refunded."""
+        if self.status in ['cancelled', 'refunded']:
+            for item in self.items.all():
+                if item.product:
+                    # Restore product stock
+                    item.product.stock += item.quantity
+                    item.product.save()
+                    
+                    # If product has variants, restore variant stock
+                    if item.variant:
+                        item.variant.stock += item.quantity
+                        item.variant.save()
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        old_status = None
+        old_payment_status = None
+        
+        if not is_new:
+            old_instance = Order.objects.get(pk=self.pk)
+            old_status = old_instance.status
+            old_payment_status = old_instance.payment_status
+        
+        super().save(*args, **kwargs)
+        
+        # Handle stock updates
+        if is_new:
+            # New order - no stock changes yet
+            pass
+        else:
+            # Status changed to delivered
+            if self.status == 'delivered' and old_status != 'delivered':
+                self.update_product_stock()
+            # Status changed to cancelled/refunded
+            elif self.status in ['cancelled', 'refunded'] and old_status not in ['cancelled', 'refunded']:
+                self.restore_product_stock()
+            # Payment status changed to refunded
+            elif self.payment_status == 'refunded' and old_payment_status != 'refunded':
+                self.restore_product_stock()
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
@@ -194,4 +252,14 @@ class ShippingAddress(models.Model):
         ordering = ['-is_default', '-created_at']
 
     def __str__(self):
-        return f"{self.address}, {self.city}, {self.state} {self.postal_code}" 
+        return f"{self.address}, {self.city}, {self.state} {self.postal_code}"
+
+
+@receiver(post_save, sender=Order)
+def update_revenue_on_order_completion(sender, instance, created, **kwargs):
+    """Update revenue when an order is completed."""
+    if instance.status == 'completed' and instance.payment_status == 'paid':
+        # Update dashboard metrics
+        dashboard = Dashboard.objects.first()
+        if dashboard:
+            dashboard.update_metrics() 

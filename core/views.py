@@ -18,8 +18,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.http import HttpResponseForbidden, JsonResponse
 from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
-from django.contrib.auth.models import User
+from accounts.models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
+User = CustomUser
 
 @staff_member_required
 def admin_dashboard(request):
@@ -67,9 +69,12 @@ def user_dashboard(request):
 
 @login_required
 def profile(request):
+    # Get or create user profile
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         payment_form = PaymentMethodForm(request.POST)
         
         if 'payment_submit' in request.POST:
@@ -86,11 +91,13 @@ def profile(request):
             return redirect('core:profile')
     else:
         user_form = UserUpdateForm(instance=request.user)
-        profile_form = ProfileUpdateForm(instance=request.user.profile)
+        profile_form = ProfileUpdateForm(instance=profile)
         payment_form = PaymentMethodForm()
     
     payment_methods = request.user.payment_methods.all()
     context = {
+        'user': request.user,
+        'profile': profile,
         'user_form': user_form,
         'profile_form': profile_form,
         'payment_form': payment_form,
@@ -235,9 +242,12 @@ def logout_view(request):
 
 @login_required
 def profile_update(request):
+    # Get or create user profile
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user.profile)
+        profile_form = ProfileUpdateForm(request.POST, request.FILES, instance=profile)
         
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
@@ -246,9 +256,11 @@ def profile_update(request):
             return redirect('core:profile')
     else:
         user_form = UserUpdateForm(instance=request.user)
-        profile_form = ProfileUpdateForm(instance=request.user.profile)
+        profile_form = ProfileUpdateForm(instance=profile)
     
     context = {
+        'user': request.user,
+        'profile': profile,
         'user_form': user_form,
         'profile_form': profile_form,
     }

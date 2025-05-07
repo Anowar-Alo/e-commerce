@@ -18,7 +18,7 @@ class CustomUser(AbstractUser):
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='account_profile')
     bio = models.TextField(_('bio'), blank=True)
     website = models.URLField(_('website'), blank=True)
     social_links = models.JSONField(_('social links'), default=dict, blank=True)
@@ -32,8 +32,7 @@ class UserProfile(models.Model):
     payment_methods = models.JSONField(_('payment methods'), default=list, blank=True)
     default_payment_method = models.CharField(_('default payment method'), max_length=100, blank=True)
     
-    # Wishlist and recently viewed
-    wishlist = models.ManyToManyField('products.Product', related_name='wishlists', blank=True)
+    # Recently viewed
     recently_viewed = models.JSONField(_('recently viewed'), default=list, blank=True)
     
     class Meta:
@@ -42,12 +41,6 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.email}'s profile"
-    
-    def add_to_wishlist(self, product):
-        self.wishlist.add(product)
-    
-    def remove_from_wishlist(self, product):
-        self.wishlist.remove(product)
     
     def add_shipping_address(self, address):
         addresses = self.shipping_addresses

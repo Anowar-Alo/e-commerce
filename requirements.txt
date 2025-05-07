@@ -58,7 +58,6 @@ django-storages
 django-stripe-payments
 django-timezone-field
 django-two-factor-auth
-django-unfold
 djangorestframework
 et_xmlfile
 funcy

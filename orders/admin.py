@@ -1,36 +1,94 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
-from .models import Order, OrderItem, ShippingAddress
+from django.urls import reverse
+from django.utils.html import format_html
+from django.contrib import messages
+from django.utils import timezone
+from .models import Order, Refund
+from core.admin import admin_site
+from core.models import Dashboard
 
-@admin.register(Order)
-class OrderAdmin(ModelAdmin):
-    list_display = ('id', 'user', 'total', 'status', 'created_at')
-    list_filter = ('status', 'created_at', 'payment_method')
-    search_fields = ('id', 'user__email', 'shipping_address__address')
-    readonly_fields = ('created_at', 'updated_at')
+@admin.register(Order, site=admin_site)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ('order_number', 'user', 'total', 'status', 'payment_status', 'created_at', 'refund_action')
+    list_filter = ('status', 'payment_status', 'created_at', 'payment_method')
+    search_fields = ('order_number', 'user__email', 'shipping_address')
+    readonly_fields = ('created_at', 'updated_at', 'order_number', 'status_history')
+    
     fieldsets = (
         ('Order Information', {
-            'fields': ('user', 'status', 'total')
+            'fields': ('order_number', 'user', 'status', 'payment_status', 'total')
         }),
-        ('Payment', {
-            'fields': ('payment_method', 'payment_status')
+        ('Customer Information', {
+            'fields': ('shipping_name', 'shipping_phone', 'shipping_email', 'shipping_address')
         }),
-        ('Shipping', {
-            'fields': ('shipping_address', 'shipping_method', 'tracking_number')
+        ('Notes', {
+            'fields': ('customer_notes', 'staff_notes')
+        }),
+        ('Status History', {
+            'fields': ('status_history',),
+            'classes': ('collapse',)
         }),
         ('Metadata', {
-            'fields': ('created_at', 'updated_at')
+            'fields': ('created_at', 'updated_at', 'paid_at', 'shipped_at', 'delivered_at'),
+            'classes': ('collapse',)
         }),
     )
+    
+    def refund_action(self, obj):
+        """Add refund button to the list display."""
+        if obj.payment_status == 'paid' and obj.status not in ['refunded', 'cancelled']:
+            return format_html(
+                '<a href="{}" class="button" style="background-color: #dc3545; color: white; padding: 5px 10px; text-decoration: none; border-radius: 4px;">Refund</a>',
+                reverse('admin:orders_order_change', args=[obj.id])
+            )
+        return '-'
+    refund_action.short_description = 'Refund'
+    
+    def status_history(self, obj):
+        """Display the order status history."""
+        updates = obj.status_updates.all().order_by('-created_at')
+        if not updates:
+            return 'No status updates yet.'
+        
+        history = []
+        for update in updates:
+            history.append(
+                f'<div class="status-update">'
+                f'<strong>{update.status}</strong> by {update.created_by} '
+                f'on {update.created_at.strftime("%Y-%m-%d %H:%M")}'
+                f'<br><small>{update.notes}</small>'
+                f'</div>'
+            )
+        return format_html(''.join(history))
+    status_history.short_description = 'Status History'
 
-@admin.register(OrderItem)
-class OrderItemAdmin(ModelAdmin):
-    list_display = ('order', 'product', 'quantity', 'unit_price')
-    list_filter = ('order__status',)
-    search_fields = ('order__id', 'product__name')
-
-@admin.register(ShippingAddress)
-class ShippingAddressAdmin(ModelAdmin):
-    list_display = ('user', 'address', 'city', 'state', 'country')
-    list_filter = ('country', 'state')
-    search_fields = ('user__email', 'address', 'city') 
+    def save_model(self, request, obj, form, change):
+        """Handle order updates and refunds."""
+        if change and 'status' in form.changed_data:
+            # Create status update record
+            obj.status_updates.create(
+                status=obj.status,
+                notes=f"Status updated to {obj.status}",
+                created_by=request.user
+            )
+            
+            # Handle refund
+            if obj.status == 'refunded' and obj.payment_status == 'paid':
+                # Create refund record
+                Refund.objects.create(
+                    order=obj,
+                    status='completed',
+                    amount=obj.total,
+                    reason="Refund processed through admin panel",
+                    processed_by=request.user,
+                    processed_at=timezone.now()
+                )
+                obj.payment_status = 'refunded'
+            
+            # Update dashboard metrics if order is delivered
+            if obj.status == 'delivered' and obj.payment_status == 'paid':
+                dashboard = Dashboard.objects.first()
+                if dashboard:
+                    dashboard.update_metrics()
+        
+        super().save_model(request, obj, form, change) 

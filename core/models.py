@@ -6,8 +6,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from accounts.models import CustomUser
 
-User = get_user_model()
+User = CustomUser
 
 
 class Notification(models.Model):
@@ -171,6 +172,7 @@ class Dashboard(models.Model):
     total_products = models.IntegerField(default=0)
     total_customers = models.IntegerField(default=0)
     last_updated = models.DateTimeField(auto_now=True)
+    monthly_revenue = models.JSONField(default=dict, help_text="Monthly revenue data")
 
     class Meta:
         verbose_name = _('Dashboard')
@@ -183,20 +185,46 @@ class Dashboard(models.Model):
         from orders.models import Order
         from products.models import Product
         from django.contrib.auth import get_user_model
+        from django.utils import timezone
+        from django.db.models import Sum
+        from datetime import datetime
 
         User = get_user_model()
         
+        # Update basic metrics
         self.total_orders = Order.objects.count()
-        self.total_revenue = Order.objects.aggregate(
-            total=models.Sum('total')
+        self.total_revenue = Order.objects.filter(status='completed', payment_status='paid').aggregate(
+            total=Sum('total')
         )['total'] or 0
         self.total_products = Product.objects.count()
         self.total_customers = User.objects.filter(is_staff=False).count()
+
+        # Update monthly revenue
+        current_year = timezone.now().year
+        monthly_data = {}
+        
+        for month in range(1, 13):
+            month_start = timezone.make_aware(datetime(current_year, month, 1))
+            if month == 12:
+                next_month = timezone.make_aware(datetime(current_year + 1, 1, 1))
+            else:
+                next_month = timezone.make_aware(datetime(current_year, month + 1, 1))
+            
+            month_revenue = Order.objects.filter(
+                status='completed',
+                payment_status='paid',
+                created_at__gte=month_start,
+                created_at__lt=next_month
+            ).aggregate(total=Sum('total'))['total'] or 0
+            
+            monthly_data[str(month)] = float(month_revenue)
+        
+        self.monthly_revenue = monthly_data
         self.save()
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='core_profile')
     bio = models.TextField(max_length=500, blank=True)
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
