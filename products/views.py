@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Avg
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -12,75 +12,117 @@ from django.utils import timezone
 def get_ai_recommendations(user):
     recommendations = []
     
-    # Get user's purchase history
-    if user.is_authenticated:
-        # Get products from user's order history
-        purchased_products = Product.objects.filter(
-            orderitem__order__user=user,
-            orderitem__order__status__in=['delivered', 'completed']
-        ).distinct()
+    try:
+        # 1. Get user's purchase history
+        if user.is_authenticated:
+            # Get products from user's order history
+            purchased_products = Product.objects.filter(
+                orderitem__order__user=user,
+                orderitem__order__status__in=['delivered', 'completed']
+            ).distinct()
+            
+            # Get categories of purchased products
+            purchased_categories = Category.objects.filter(
+                products__in=purchased_products
+            ).distinct()
+            
+            # Get user's recently viewed products from their profile
+            try:
+                recently_viewed_ids = user.account_profile.recently_viewed
+                recently_viewed_products = Product.objects.filter(
+                    id__in=recently_viewed_ids,
+                    is_active=True
+                ).distinct()
+            except:
+                recently_viewed_products = Product.objects.none()
+            
+            # 2. Get highly rated products from same categories
+            highly_rated_products = Product.objects.filter(
+                category__in=purchased_categories,
+                is_active=True,
+                reviews__rating__gte=4
+            ).annotate(
+                avg_rating=Avg('reviews__rating'),
+                review_count=Count('reviews')
+            ).filter(
+                review_count__gte=3  # At least 3 reviews
+            ).order_by('-avg_rating')
+            
+            # 3. Get similar products based on price range
+            if purchased_products.exists():
+                avg_purchase_price = purchased_products.aggregate(Avg('price'))['price__avg']
+                price_range_products = Product.objects.filter(
+                    category__in=purchased_categories,
+                    is_active=True,
+                    price__gte=avg_purchase_price * 0.7,  # Within 30% price range
+                    price__lte=avg_purchase_price * 1.3
+                ).exclude(
+                    id__in=purchased_products
+                )
+            else:
+                price_range_products = Product.objects.none()
+            
+            # 4. Get trending products in user's preferred categories
+            trending_products = Product.objects.filter(
+                category__in=purchased_categories,
+                is_active=True
+            ).annotate(
+                recent_orders=Count(
+                    'orderitem',
+                    filter=Q(
+                        orderitem__order__created_at__gte=timezone.now() - timezone.timedelta(days=30)
+                    )
+                ),
+                avg_rating=Avg('reviews__rating')
+            ).order_by('-recent_orders', '-avg_rating')
+            
+            # Combine recommendations with priority
+            recommendations.extend(list(recently_viewed_products[:2]))  # Recently viewed
+            recommendations.extend(list(highly_rated_products[:3]))    # Highly rated
+            recommendations.extend(list(price_range_products[:2]))     # Similar price range
+            recommendations.extend(list(trending_products[:3]))        # Trending
         
-        # Get categories of purchased products
-        purchased_categories = Category.objects.filter(
-            products__in=purchased_products
-        ).distinct()
+        # 5. If no recommendations or user not authenticated, show popular and trending products
+        if not recommendations:
+            # Get popular products with good ratings
+            popular_products = Product.objects.filter(
+                is_active=True
+            ).annotate(
+                order_count=Count('orderitem'),
+                avg_rating=Avg('reviews__rating')
+            ).filter(
+                avg_rating__gte=4
+            ).order_by('-order_count', '-avg_rating')[:4]
+            
+            # Get trending products across all categories
+            trending_products = Product.objects.filter(
+                is_active=True
+            ).annotate(
+                recent_orders=Count(
+                    'orderitem',
+                    filter=Q(
+                        orderitem__order__created_at__gte=timezone.now() - timezone.timedelta(days=30)
+                    )
+                ),
+                avg_rating=Avg('reviews__rating')
+            ).order_by('-recent_orders', '-avg_rating')[:4]
+            
+            recommendations.extend(list(popular_products))
+            recommendations.extend(list(trending_products))
         
-        # Get similar products from same categories
-        similar_products = Product.objects.filter(
-            category__in=purchased_categories,
-            is_active=True
-        ).exclude(
-            id__in=purchased_products
-        ).distinct()
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_recommendations = []
+        for product in recommendations:
+            if product.id not in seen:
+                seen.add(product.id)
+                unique_recommendations.append(product)
         
-        # Get popular products from same categories
-        popular_products = Product.objects.filter(
-            category__in=purchased_categories,
-            is_active=True
-        ).annotate(
-            order_count=Count('orderitem')
-        ).order_by('-order_count')
-        
-        # Get trending products (based on recent orders)
-        trending_products = Product.objects.filter(
-            is_active=True
-        ).annotate(
-            recent_orders=Count('orderitem', filter=Q(orderitem__order__created_at__gte=timezone.now() - timezone.timedelta(days=30)))
-        ).order_by('-recent_orders')
-        
-        # Combine recommendations with priority
-        recommendations.extend(list(similar_products[:3]))
-        recommendations.extend(list(popular_products[:3]))
-        recommendations.extend(list(trending_products[:2]))
+        return unique_recommendations[:8]  # Return at most 8 unique recommendations
     
-    # If no recommendations or user not authenticated, show popular and trending products
-    if not recommendations:
-        # Get popular products
-        popular_products = Product.objects.filter(
-            is_active=True
-        ).annotate(
-            order_count=Count('orderitem')
-        ).order_by('-order_count')[:4]
-        
-        # Get trending products
-        trending_products = Product.objects.filter(
-            is_active=True
-        ).annotate(
-            recent_orders=Count('orderitem', filter=Q(orderitem__order__created_at__gte=timezone.now() - timezone.timedelta(days=30)))
-        ).order_by('-recent_orders')[:4]
-        
-        recommendations.extend(list(popular_products))
-        recommendations.extend(list(trending_products))
-    
-    # Remove duplicates while preserving order
-    seen = set()
-    unique_recommendations = []
-    for product in recommendations:
-        if product.id not in seen:
-            seen.add(product.id)
-            unique_recommendations.append(product)
-    
-    return unique_recommendations[:8]  # Return at most 8 unique recommendations
+    except Exception as e:
+        # Fallback to basic recommendations if anything goes wrong
+        return Product.objects.filter(is_active=True).order_by('-created_at')[:8]
 
 def home(request):
     featured_categories = Category.objects.filter(is_active=True)[:6]

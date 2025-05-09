@@ -8,7 +8,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required
 from .models import UserProfile, SiteSettings
-from .forms import UserProfileForm, UserUpdateForm, PaymentMethodForm, CustomUserCreationForm, ProfileUpdateForm
+from .forms import UserProfileForm, UserUpdateForm, PaymentMethodForm, CustomUserCreationForm, ProfileUpdateForm, ContactForm
 from django.contrib import messages
 from payments.models import PaymentMethod, Transaction
 from django.db.models.functions import TruncDate, TruncMonth, TruncYear, ExtractHour
@@ -20,6 +20,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.paginator import Paginator
 from accounts.models import CustomUser
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.core.mail import send_mail
 
 User = CustomUser
 
@@ -195,7 +196,66 @@ def home(request):
 
 def contact(request):
     """Contact page view."""
-    return render(request, 'core/contact.html')
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            # Save the message
+            contact_message = form.save()
+            
+            # Get site settings for email
+            site_settings = SiteSettings.get_settings()
+            
+            # Send email notification
+            try:
+                send_mail(
+                    subject=f'New Contact Form Submission: {contact_message.subject}',
+                    message=f'''
+                    Name: {contact_message.name}
+                    Email: {contact_message.email}
+                    Subject: {contact_message.subject}
+                    
+                    Message:
+                    {contact_message.message}
+                    ''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[site_settings.contact_email],
+                    fail_silently=False,
+                )
+                
+                # Send confirmation email to user
+                send_mail(
+                    subject='Thank you for contacting us',
+                    message=f'''
+                    Dear {contact_message.name},
+                    
+                    Thank you for contacting us. We have received your message and will get back to you as soon as possible.
+                    
+                    Your message:
+                    {contact_message.message}
+                    
+                    Best regards,
+                    {site_settings.site_name} Team
+                    ''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[contact_message.email],
+                    fail_silently=False,
+                )
+                
+                messages.success(request, 'Your message has been sent successfully! We will get back to you soon.')
+                return redirect('core:contact')
+            except Exception as e:
+                messages.error(request, 'There was an error sending your message. Please try again later.')
+    else:
+        form = ContactForm()
+    
+    # Get site settings for contact information
+    site_settings = SiteSettings.get_settings()
+    
+    context = {
+        'form': form,
+        'site_settings': site_settings,
+    }
+    return render(request, 'core/contact.html', context)
 
 @ensure_csrf_cookie
 def debug_csrf(request):

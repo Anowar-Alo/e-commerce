@@ -10,7 +10,7 @@ from datetime import timedelta
 from products.models import Product, Category, Brand, ProductAttribute
 from orders.models import Order, OrderItem, Refund
 from django.contrib.auth.models import User
-from .models import Dashboard, UserProfile, SiteSettings
+from .models import Dashboard, UserProfile, SiteSettings, ContactMessage
 from .views import admin_analytics
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.views import LoginView
@@ -248,4 +248,22 @@ class RefundAdmin(admin.ModelAdmin):
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
-    ) 
+    )
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'created_at', 'is_read')
+    list_filter = ('is_read', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
+    
+    def mark_as_read(self, request, queryset):
+        queryset.update(is_read=True)
+    mark_as_read.short_description = "Mark selected messages as read"
+    
+    def mark_as_unread(self, request, queryset):
+        queryset.update(is_read=False)
+    mark_as_unread.short_description = "Mark selected messages as unread"
+    
+    actions = ['mark_as_read', 'mark_as_unread'] 

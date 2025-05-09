@@ -317,8 +317,26 @@ class SiteSettings(models.Model):
             defaults={
                 'site_name': 'E-commerce Site',
                 'site_description': 'Your one-stop shop for all your needs',
-                'contact_email': 'contact@example.com',
-                'contact_phone': '+1234567890'
+                'contact_email': 'kamrulhasan9047@gmail.com',
+                'contact_phone': '+8801757704783'
             }
         )
-        return settings 
+        return settings
+
+
+class ContactMessage(models.Model):
+    """Model for storing contact form submissions."""
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Contact Message'
+        verbose_name_plural = 'Contact Messages'
+    
+    def __str__(self):
+        return f"{self.name} - {self.subject}" 
