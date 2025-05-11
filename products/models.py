@@ -97,6 +97,11 @@ class Product(models.Model):
             # Generate a unique SKU based on the product name and a timestamp
             timestamp = timezone.now().strftime('%Y%m%d%H%M%S')
             self.sku = f"{slugify(self.name)[:10]}-{timestamp}"
+        
+        # Ensure stock can't go below 0
+        if self.stock < 0:
+            raise ValueError(f'Stock cannot be negative. Attempted to set stock to {self.stock}')
+        
         super().save(*args, **kwargs)
 
 

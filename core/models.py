@@ -193,7 +193,7 @@ class Dashboard(models.Model):
         
         # Update basic metrics
         self.total_orders = Order.objects.count()
-        self.total_revenue = Order.objects.filter(status='completed', payment_status='paid').aggregate(
+        self.total_revenue = Order.objects.filter(status='delivered', payment_status='paid').aggregate(
             total=Sum('total')
         )['total'] or 0
         self.total_products = Product.objects.count()
@@ -211,7 +211,7 @@ class Dashboard(models.Model):
                 next_month = timezone.make_aware(datetime(current_year, month + 1, 1))
             
             month_revenue = Order.objects.filter(
-                status='completed',
+                status='delivered',
                 payment_status='paid',
                 created_at__gte=month_start,
                 created_at__lt=next_month

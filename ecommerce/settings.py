@@ -21,18 +21,17 @@ environ.Env.read_env()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='your-secret-key-here')
+SECRET_KEY = 'django-insecure-development-key-change-in-production'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-CSRF_TRUSTED_ORIGINS = ['https://ecommerce-8zma.onrender.com','https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # Application definition
 
@@ -52,6 +51,8 @@ INSTALLED_APPS = [
     'cart',
     'crispy_forms',
     'crispy_bootstrap5',
+    'django_extensions',
+    'debug_toolbar',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +63,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+]
+
+# Debug Toolbar settings
+INTERNAL_IPS = [
+    '127.0.0.1',
 ]
 
 ROOT_URLCONF = 'ecommerce.urls'
@@ -93,18 +100,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ecommerce.wsgi.application'
 ASGI_APPLICATION = 'ecommerce.asgi.application'
 
-
 # Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
-
 # Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -123,22 +127,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
@@ -147,8 +142,6 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Authentication backends
@@ -160,7 +153,7 @@ AUTHENTICATION_BACKENDS = [
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Login/Logout URLs
-LOGIN_URL = 'core:login'  # Changed from 'account_login'
+LOGIN_URL = 'core:login'
 LOGIN_REDIRECT_URL = 'core:home'
 LOGOUT_REDIRECT_URL = 'core:home'
 
@@ -169,19 +162,13 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 # Email settings
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development - prints emails to console
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # For production
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'your-email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'your-app-password'
-DEFAULT_FROM_EMAIL = 'kamrulhasan9047@gmail.com'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@example.com'
 
 # Stripe Configuration
-STRIPE_PUBLIC_KEY = os.getenv('STRIPE_PUBLIC_KEY', 'your_stripe_public_key')
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'your_stripe_secret_key')
-STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'your_stripe_webhook_secret')
+STRIPE_PUBLIC_KEY = 'your_stripe_public_key'
+STRIPE_SECRET_KEY = 'your_stripe_secret_key'
+STRIPE_WEBHOOK_SECRET = 'your_stripe_webhook_secret'
 
 # Payment Settings
 PAYMENT_METHODS = {
@@ -205,18 +192,7 @@ PAYMENT_METHODS = {
 
 # Currency Settings
 CURRENCY = 'USD'
-CURRENCY_SYMBOL = '₹'  # Indian Rupee symbol
-
-# Redis settings
-# REDIS_URL = env('REDIS_URL', default='redis://localhost:6379/0')
-
-# Celery settings
-# CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/1')
-# CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/2')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
+CURRENCY_SYMBOL = '$'
 
 # Cache settings
 CACHES = {
@@ -237,23 +213,21 @@ CHANNEL_LAYERS = {
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_SSL_REDIRECT = False  # Make sure this is False for development
-SECURE_HSTS_SECONDS = 0  # Set to 0 for development
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # Set to False for development
-SECURE_HSTS_PRELOAD = False  # Set to False for development
+SECURE_SSL_REDIRECT = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # CSRF settings
-CSRF_COOKIE_SECURE = False  # Changed to False for development
+CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = True
-CSRF_COOKIE_SAMESITE = 'Lax'  # Changed from None to 'Lax'
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
-CSRF_USE_SESSIONS = False  # Changed to False to use cookies instead of sessions
+CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Session settings
-SESSION_COOKIE_SECURE = False  # Changed to False for development
+SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'  # Changed from None to 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 

@@ -59,10 +59,10 @@ class CustomAdminSite(admin.AdminSite):
         recent_orders = Order.objects.filter(created_at__gte=last_week).count()
         monthly_orders = Order.objects.filter(created_at__gte=last_month).count()
         
-        # Get revenue statistics
-        total_revenue = Order.objects.filter(status='completed').aggregate(Sum('total'))['total__sum'] or 0
-        weekly_revenue = Order.objects.filter(status='completed', created_at__gte=last_week).aggregate(Sum('total'))['total__sum'] or 0
-        monthly_revenue = Order.objects.filter(status='completed', created_at__gte=last_month).aggregate(Sum('total'))['total__sum'] or 0
+        # Get revenue statistics - only count delivered and paid orders
+        total_revenue = Order.objects.filter(status='delivered', payment_status='paid').aggregate(Sum('total'))['total__sum'] or 0
+        weekly_revenue = Order.objects.filter(status='delivered', payment_status='paid', created_at__gte=last_week).aggregate(Sum('total'))['total__sum'] or 0
+        monthly_revenue = Order.objects.filter(status='delivered', payment_status='paid', created_at__gte=last_month).aggregate(Sum('total'))['total__sum'] or 0
 
         # Get product statistics
         total_products = Product.objects.count()

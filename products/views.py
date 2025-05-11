@@ -8,6 +8,7 @@ from .models import Product, Category, ProductReview, Brand
 from .forms import ReviewForm
 from orders.models import Order, OrderItem
 from django.utils import timezone
+import logging
 
 def get_ai_recommendations(user):
     recommendations = []
@@ -135,58 +136,68 @@ def home(request):
     return render(request, 'home.html', context)
 
 def product_list(request, slug=None):
-    products = Product.objects.filter(is_active=True)
-    
-    # Get filter parameters
-    min_price = request.GET.get('min_price')
-    max_price = request.GET.get('max_price')
-    category_id = request.GET.get('category')
-    brand_id = request.GET.get('brand')
-    sort = request.GET.get('sort', 'name')
-    
-    # Filter by category if slug is provided
-    if slug:
-        category = get_object_or_404(Category, slug=slug, is_active=True)
-        products = products.filter(category=category)
-    elif category_id:
-        products = products.filter(category_id=category_id)
-    
-    # Apply brand filter
-    if brand_id:
-        products = products.filter(brand_id=brand_id)
-    
-    # Apply price range filters
-    if min_price:
-        products = products.filter(price__gte=min_price)
-    if max_price:
-        products = products.filter(price__lte=max_price)
-    
-    # Apply sorting
-    if sort == 'price_asc':
-        products = products.order_by('price')
-    elif sort == 'price_desc':
-        products = products.order_by('-price')
-    elif sort == 'name':
-        products = products.order_by('name')
-    elif sort == 'newest':
-        products = products.order_by('-created_at')
-    
-    # Get all categories and brands for filter dropdowns
-    categories = Category.objects.filter(is_active=True)
-    brands = Brand.objects.filter(is_active=True)
-    
-    context = {
-        'products': products,
-        'category': category if slug else None,
-        'categories': categories,
-        'brands': brands,
-        'selected_category': category_id,
-        'selected_brand': brand_id,
-        'min_price': min_price,
-        'max_price': max_price,
-        'sort': sort,
-    }
-    return render(request, 'products/product_list.html', context)
+    try:
+        products = Product.objects.filter(is_active=True)
+        
+        # Get filter parameters
+        min_price = request.GET.get('min_price')
+        max_price = request.GET.get('max_price')
+        category_id = request.GET.get('category')
+        brand_id = request.GET.get('brand')
+        sort = request.GET.get('sort', 'name')  # Default sort by name
+        
+        # Filter by category if slug is provided
+        category = None
+        if slug:
+            category = get_object_or_404(Category, slug=slug, is_active=True)
+            products = products.filter(category=category)
+        elif category_id:
+            products = products.filter(category_id=category_id)
+        
+        # Apply brand filter
+        if brand_id:
+            products = products.filter(brand_id=brand_id)
+        
+        # Apply price range filters
+        if min_price:
+            products = products.filter(price__gte=min_price)
+        if max_price:
+            products = products.filter(price__lte=max_price)
+        
+        # Apply sorting
+        if sort == 'price_asc':
+            products = products.order_by('price')
+        elif sort == 'price_desc':
+            products = products.order_by('-price')
+        elif sort == 'name':
+            products = products.order_by('name')
+        elif sort == 'newest':
+            products = products.order_by('-created_at')
+        
+        # Get all categories and brands for filter dropdowns
+        categories = Category.objects.filter(is_active=True)
+        brands = Brand.objects.filter(is_active=True)
+        
+        context = {
+            'products': products,
+            'category': category,
+            'categories': categories,
+            'brands': brands,
+            'selected_category': category_id,
+            'selected_brand': brand_id,
+            'min_price': min_price,
+            'max_price': max_price,
+            'sort': str(sort),  # Ensure sort is a string
+        }
+        return render(request, 'products/product_list.html', context)
+    except Category.DoesNotExist:
+        messages.error(request, 'Category not found.')
+        return redirect('products:product_list')
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f'Error in product_list view: {str(e)}')
+        messages.error(request, 'An error occurred while loading the products.')
+        return redirect('products:product_list')
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug)

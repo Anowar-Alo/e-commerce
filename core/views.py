@@ -33,10 +33,10 @@ def admin_dashboard(request):
     total_customers = get_user_model().objects.filter(is_staff=False).count()
     low_stock_products = Product.objects.filter(stock__lt=10).count()
 
-    # Revenue
-    total_revenue = Order.objects.aggregate(total=Sum('total'))['total'] or 0
+    # Revenue - only count completed and paid orders
+    total_revenue = Order.objects.filter(status='completed', payment_status='paid').aggregate(total=Sum('total'))['total'] or 0
     week_ago = timezone.now() - timedelta(days=7)
-    weekly_revenue = Order.objects.filter(created_at__gte=week_ago).aggregate(total=Sum('total'))['total'] or 0
+    weekly_revenue = Order.objects.filter(status='completed', payment_status='paid', created_at__gte=week_ago).aggregate(total=Sum('total'))['total'] or 0
 
     # Recent orders
     recent_orders = Order.objects.filter(created_at__gte=week_ago).count()
@@ -46,7 +46,7 @@ def admin_dashboard(request):
     daily_sales = []
     for i in range(7):
         day = timezone.now().date() - timedelta(days=6-i)
-        total = Order.objects.filter(created_at__date=day).aggregate(total=Sum('total'))['total'] or 0
+        total = Order.objects.filter(status='completed', payment_status='paid', created_at__date=day).aggregate(total=Sum('total'))['total'] or 0
         daily_sales.append({'day': day.strftime('%a'), 'total': float(total)})
 
     context = {
@@ -135,10 +135,10 @@ def admin_analytics(request):
     recent_orders = Order.objects.filter(created_at__gte=last_week).count()
     monthly_orders = Order.objects.filter(created_at__gte=last_month).count()
     
-    # Get revenue statistics
-    total_revenue = Order.objects.filter(status='completed').aggregate(Sum('total'))['total__sum'] or 0
-    weekly_revenue = Order.objects.filter(status='completed', created_at__gte=last_week).aggregate(Sum('total'))['total__sum'] or 0
-    monthly_revenue = Order.objects.filter(status='completed', created_at__gte=last_month).aggregate(Sum('total'))['total__sum'] or 0
+    # Get revenue statistics - only count delivered and paid orders
+    total_revenue = Order.objects.filter(status='delivered', payment_status='paid').aggregate(Sum('total'))['total__sum'] or 0
+    weekly_revenue = Order.objects.filter(status='delivered', payment_status='paid', created_at__gte=last_week).aggregate(Sum('total'))['total__sum'] or 0
+    monthly_revenue = Order.objects.filter(status='delivered', payment_status='paid', created_at__gte=last_month).aggregate(Sum('total'))['total__sum'] or 0
 
     # Get product statistics
     total_products = Product.objects.count()

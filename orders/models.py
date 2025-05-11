@@ -111,12 +111,18 @@ class Order(models.Model):
         if self.status == 'delivered' and self.payment_status == 'paid':
             for item in self.items.all():
                 if item.product:
+                    # Check if enough stock is available
+                    if item.product.stock < item.quantity:
+                        raise ValueError(f'Not enough stock for product {item.product.name}. Available: {item.product.stock}, Required: {item.quantity}')
+                    
                     # Decrease product stock
                     item.product.stock -= item.quantity
                     item.product.save()
                     
                     # If product has variants, update variant stock
                     if item.variant:
+                        if item.variant.stock < item.quantity:
+                            raise ValueError(f'Not enough stock for variant {item.variant.name}. Available: {item.variant.stock}, Required: {item.quantity}')
                         item.variant.stock -= item.quantity
                         item.variant.save()
 
@@ -256,9 +262,33 @@ class ShippingAddress(models.Model):
 
 
 @receiver(post_save, sender=Order)
+def handle_order_status_changes(sender, instance, created, **kwargs):
+    """Handle stock updates when order status changes."""
+    if not created:  # Only for existing orders
+        try:
+            old_instance = Order.objects.get(pk=instance.pk)
+            
+            # Order just marked as delivered
+            if instance.status == 'delivered' and old_instance.status != 'delivered':
+                if instance.payment_status == 'paid':
+                    instance.update_product_stock()
+            
+            # Order just cancelled or refunded
+            elif instance.status in ['cancelled', 'refunded'] and old_instance.status not in ['cancelled', 'refunded']:
+                instance.restore_product_stock()
+            
+            # Payment status changed to refunded
+            elif instance.payment_status == 'refunded' and old_instance.payment_status != 'refunded':
+                instance.restore_product_stock()
+                
+        except Order.DoesNotExist:
+            pass  # Handle case where old instance doesn't exist
+
+
+@receiver(post_save, sender=Order)
 def update_revenue_on_order_completion(sender, instance, created, **kwargs):
     """Update revenue when an order is completed."""
-    if instance.status == 'completed' and instance.payment_status == 'paid':
+    if instance.status == 'delivered' and instance.payment_status == 'paid':
         # Update dashboard metrics
         dashboard = Dashboard.objects.first()
         if dashboard:

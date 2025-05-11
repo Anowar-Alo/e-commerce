@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.contrib import messages
 from django.utils import timezone
-from .models import Order, Refund
+from .models import Order, Refund, OrderStatusUpdate
 from core.admin import admin_site
 from core.models import Dashboard
 
@@ -64,31 +64,59 @@ class OrderAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         """Handle order updates and refunds."""
-        if change and 'status' in form.changed_data:
-            # Create status update record
-            obj.status_updates.create(
-                status=obj.status,
-                notes=f"Status updated to {obj.status}",
-                created_by=request.user
-            )
-            
-            # Handle refund
-            if obj.status == 'refunded' and obj.payment_status == 'paid':
-                # Create refund record
-                Refund.objects.create(
-                    order=obj,
-                    status='completed',
-                    amount=obj.total,
-                    reason="Refund processed through admin panel",
-                    processed_by=request.user,
-                    processed_at=timezone.now()
+        try:
+            if change and 'status' in form.changed_data:
+                old_status = form.initial['status']
+                
+                # Create status update record
+                obj.status_updates.create(
+                    status=obj.status,
+                    notes=f"Status updated to {obj.status}",
+                    created_by=request.user
                 )
-                obj.payment_status = 'refunded'
+                
+                # Handle refund
+                if obj.status == 'refunded' and obj.payment_status == 'paid':
+                    # Create refund record
+                    Refund.objects.create(
+                        order=obj,
+                        status='completed',
+                        amount=obj.total,
+                        reason="Refund processed through admin panel",
+                        processed_by=request.user,
+                        processed_at=timezone.now()
+                    )
+                    obj.payment_status = 'refunded'
+                    obj.restore_product_stock()  # Restore stock on refund
+                
+                # Update stock and dashboard metrics if order is delivered
+                if obj.status == 'delivered' and obj.payment_status == 'paid':
+                    try:
+                        obj.update_product_stock()  # Update stock on delivery
+                    except ValueError as e:
+                        messages.error(request, str(e))
+                        obj.status = old_status  # Revert the status change
+                        return
+                    
+                    # Update dashboard metrics
+                    dashboard = Dashboard.objects.first()
+                    if dashboard:
+                        dashboard.update_metrics()
+                
+                # Handle cancelled orders
+                if obj.status == 'cancelled':
+                    obj.restore_product_stock()  # Restore stock on cancellation
             
-            # Update dashboard metrics if order is delivered
-            if obj.status == 'delivered' and obj.payment_status == 'paid':
-                dashboard = Dashboard.objects.first()
-                if dashboard:
-                    dashboard.update_metrics()
+            super().save_model(request, obj, form, change)
+            
+            # Show message to admin
+            if change and 'status' in form.changed_data:
+                if obj.status == 'delivered':
+                    messages.success(request, f'Order {obj.order_number} marked as delivered. Product stock has been updated.')
+                elif obj.status in ['cancelled', 'refunded']:
+                    messages.info(request, f'Order {obj.order_number} {obj.status}. Product stock has been restored.')
         
-        super().save_model(request, obj, form, change) 
+        except Exception as e:
+            messages.error(request, f'Error updating order: {str(e)}')
+            if change and 'status' in form.changed_data:
+                obj.status = form.initial['status']  # Revert the status change 

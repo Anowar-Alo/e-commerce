@@ -10,7 +10,7 @@
         border-radius: 10px;
         padding: 1.5rem;
         margin-bottom: 2rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .filter-header {
@@ -63,7 +63,7 @@
 
     .product-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .product-image {
@@ -124,13 +124,18 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2 mb-0">{% if category %}{{ category.name }}{% else %}All Products{% endif %}</h1>
         <div class="d-flex align-items-center">
-            <label for="sort" class="me-2">Sort by:</label>
-            <select name="sort" id="sort" class="form-select sort-select" onchange="this.form.submit()">
-                <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
-                <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
-                <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
-                <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
-            </select>
+            <form method="get" class="d-flex align-items-center">
+                <label for="sort" class="me-2">Sort by:</label>
+                <select name="sort" id="sort" class="form-select sort-select" onchange="this.form.submit()">
+                    <option value="name" {% if sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                    <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+                    <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest First</option>
+                </select>
+                {% if category %}
+                <input type="hidden" name="category" value="{{ category.id }}">
+                {% endif %}
+            </form>
         </div>
     </div>
 
@@ -138,7 +143,7 @@
         <div class="filter-header">
             <h2 class="h5 mb-0">Filter Products</h2>
         </div>
-        
+
         <div class="row">
             <!-- Category Filter -->
             <div class="col-md-4">
@@ -147,9 +152,9 @@
                     <select name="category" id="category" class="form-select">
                         <option value="">All Categories</option>
                         {% for cat in categories %}
-                            <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
-                                {{ cat.name }}
-                            </option>
+                        <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:'s' %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -162,9 +167,9 @@
                     <select name="brand" id="brand" class="form-select">
                         <option value="">All Brands</option>
                         {% for brand in brands %}
-                            <option value="{{ brand.id }}" {% if selected_brand == brand.id|stringformat:"s" %}selected{% endif %}>
-                                {{ brand.name }}
-                            </option>
+                        <option value="{{ brand.id }}" {% if selected_brand == brand.id|stringformat:'s' %}selected{% endif %}>
+                            {{ brand.name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -176,10 +181,12 @@
                     <label class="filter-label">Price Range</label>
                     <div class="price-range-inputs">
                         <div class="price-input">
-                            <input type="number" name="min_price" id="min_price" class="form-control" placeholder="Min" value="{{ min_price }}">
+                            <input type="number" name="min_price" id="min_price" class="form-control" placeholder="Min"
+                                value="{{ min_price }}">
                         </div>
                         <div class="price-input">
-                            <input type="number" name="max_price" id="max_price" class="form-control" placeholder="Max" value="{{ max_price }}">
+                            <input type="number" name="max_price" id="max_price" class="form-control" placeholder="Max"
+                                value="{{ max_price }}">
                         </div>
                     </div>
                 </div>
@@ -195,35 +202,39 @@
     <!-- Products Grid -->
     <div class="row g-4">
         {% for product in products %}
-            <div class="col-md-4">
-                <div class="card product-card">
-                    <a href="{% url 'products:product_detail' product.slug %}" class="text-decoration-none">
-                        {% if product.image %}
-                            <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
-                        {% endif %}
-                        <div class="card-body">
-                            <div class="product-brand">{{ product.brand.name }}</div>
-                            <h5 class="card-title text-dark">{{ product.name }}</h5>
-                            <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div class="product-price">${{ product.price }}</div>
-                                <form action="{% url 'cart:cart_add' product.id %}" method="post">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
-                                </form>
-                            </div>
+        <div class="col-md-4">
+            <div class="card product-card">
+                <a href="{% url 'products:product_detail' product.slug %}" class="text-decoration-none">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="card-img-top product-image" alt="{{ product.name }}">
+                    {% endif %}
+                    <div class="card-body">
+                        <div class="product-brand">{{ product.brand.name }}</div>
+                        <h5 class="card-title text-dark">{{ product.name }}</h5>
+                        <p class="card-text text-muted">{{ product.description|truncatewords:15 }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div class="product-price">${{ product.price }}</div>
+                            {% if product.stock > 0 %}
+                            <form action="{% url 'cart:cart_add' product.id %}" method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn btn-primary">Add to Cart</button>
+                            </form>
+                            {% else %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                            {% endif %}
                         </div>
-                    </a>
-                </div>
+                    </div>
+                </a>
             </div>
+        </div>
         {% empty %}
-            <div class="col-12">
-                <div class="no-products">
-                    <h3 class="h4 mb-3">No Products Found</h3>
-                    <p class="text-muted mb-0">Try adjusting your filters to find what you're looking for.</p>
-                </div>
+        <div class="col-12">
+            <div class="no-products">
+                <h3 class="h4 mb-3">No Products Found</h3>
+                <p class="text-muted mb-0">Try adjusting your filters to find what you're looking for.</p>
             </div>
+        </div>
         {% endfor %}
     </div>
 </div>
@@ -231,11 +242,11 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-submit form when sort changes
-    document.getElementById('sort').addEventListener('change', function() {
-        this.form.submit();
+    document.addEventListener('DOMContentLoaded', function () {
+        // Auto-submit form when sort changes
+        document.getElementById('sort').addEventListener('change', function () {
+            this.form.submit();
+        });
     });
-});
 </script>
-{% endblock %} 
+{% endblock %}
