@@ -1,9 +1,10 @@
 from django.contrib import admin
 try:
     from unfold.admin import ModelAdmin
+    from unfold.contrib.filters.admin import RangeNumericListFilter
 except ImportError:
     from django.contrib.admin import ModelAdmin
-from unfold.contrib.filters.admin import RangeNumericListFilter
+    RangeNumericListFilter = None  # Fallback if unfold is not installed
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
 from .models import (
