@@ -1,5 +1,8 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+try:
+    from unfold.admin import ModelAdmin
+except ImportError:
+    from django.contrib.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeNumericListFilter
 from import_export.admin import ImportExportModelAdmin
 from simple_history.admin import SimpleHistoryAdmin
@@ -158,4 +161,4 @@ class ProductAttributeAdmin(ModelAdmin):
 class VariantAttributeAdmin(ModelAdmin):
     list_display = ('variant', 'attribute', 'value')
     list_filter = ('attribute',)
-    search_fields = ('variant__name', 'value') 
+    search_fields = ('variant__name', 'value')
