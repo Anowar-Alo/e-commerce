@@ -80,6 +80,7 @@ TEMPLATES = [
                 'django.template.context_processors.tz',
                 'core.context_processors.categories',
                 'core.context_processors.site_settings',
+                'cart.context_processors.cart',  # Add cart context processor
             ],
         },
     },

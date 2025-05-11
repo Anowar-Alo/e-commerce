@@ -139,6 +139,7 @@
 </section>
 
 <!-- AI Recommendations Section -->
+{% if user.is_authenticated %}
 <section class="ai-recommendations py-5 bg-light">
     <div class="container">
         <div class="row align-items-center mb-4">
@@ -201,6 +202,7 @@
         </div>
     </div>
 </section>
+{% endif %}
 
 <!-- Features Section -->
 <section class="features-section py-5 bg-light">

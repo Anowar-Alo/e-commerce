@@ -181,8 +181,10 @@ def home(request):
     page_number = request.GET.get('page')
     featured_products_page = paginator.get_page(page_number)
 
-    # Get AI recommendations
-    ai_recommendations = get_ai_recommendations(request.user)
+    # Only show AI recommendations for authenticated users
+    ai_recommendations = []
+    if request.user.is_authenticated:
+        ai_recommendations = get_ai_recommendations(request.user)
 
     # Get featured categories
     featured_categories = Category.objects.filter(is_active=True)[:6]
@@ -324,4 +326,4 @@ def profile_update(request):
         'user_form': user_form,
         'profile_form': profile_form,
     }
-    return render(request, 'core/profile_update.html', context) 
+    return render(request, 'core/profile_update.html', context)
