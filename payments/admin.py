@@ -1,5 +1,8 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+try:
+    from unfold.admin import ModelAdmin
+except ImportError:
+    from django.contrib.admin import ModelAdmin
 from .models import PaymentMethod, Transaction
 
 # Payment models are not registered in admin to keep the interface clean
@@ -15,4 +18,4 @@ class TransactionAdmin(ModelAdmin):
     list_display = ('order', 'amount', 'status', 'created_at')
     list_filter = ('status', 'created_at')
     search_fields = ('order__id', 'transaction_id')
-    readonly_fields = ('created_at', 'updated_at') 
+    readonly_fields = ('created_at', 'updated_at')
