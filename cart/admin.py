@@ -1,5 +1,8 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+try:
+    from unfold.admin import ModelAdmin
+except ImportError:
+    from django.contrib.admin import ModelAdmin
 from .models import Cart, CartItem
 
 @admin.register(Cart)
@@ -14,4 +17,4 @@ class CartItemAdmin(ModelAdmin):
     list_display = ('cart', 'product', 'quantity', 'created_at')
     list_filter = ('created_at',)
     search_fields = ('cart__user__email', 'product__name')
-    readonly_fields = ('created_at', 'updated_at') 
+    readonly_fields = ('created_at', 'updated_at')
