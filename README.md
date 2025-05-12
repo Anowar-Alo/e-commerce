@@ -21,8 +21,8 @@ A robust, scalable, and feature-rich e-commerce web application built with Djang
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Django 5.x, Django REST Framework
-- **Frontend:** Bootstrap 5, jQuery
+- **Backend:** Django 5.x
+- **Frontend:** Bootstrap 5,
 - **Database:** PostgreSQL (default: SQLite for dev)
 - **Async Tasks:** Celery, Redis
 - **Payments:** Stripe
@@ -108,7 +108,7 @@ ecommerce/
 
 1. Set production environment variables
 2. Configure static/media file hosting
-3. Set up PostgreSQL/Redis
+3. Set up Redis
 4. Run migrations and collectstatic
 5. Use a WSGI/ASGI server (e.g., Gunicorn, Daphne)
 6. Set up a reverse proxy (e.g., Nginx)
@@ -133,7 +133,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 ## 📞 Contact & Support
 
-- Email: kamrulhasan9047@gmail.com
-- Phone: +8801757704783
+- Email: ahalo1164@gmail.com
+- Phone: +8801610172044
 
 For issues, suggestions, or contributions, please open an issue or pull request on GitHub.
